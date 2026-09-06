@@ -1,0 +1,223 @@
+// Prisma Schema - Elkheta ERP System
+// SQLite-compatible for instant zero-config local development and testing
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// =============================================
+// CORE TABLES
+// =============================================
+
+model Branch {
+  id          String   @id @default(cuid())
+  nameAr      String   // اسم الفرع بالعربي
+  nameEn      String?  // اسم الفرع بالانجليزي
+  code        String   @unique // كود الفرع
+  address     String?
+  phone       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users        User[]
+  departments  Department[]
+  requisitions Requisition[]
+
+  @@map("branches")
+}
+
+model Department {
+  id        String   @id @default(cuid())
+  nameAr    String
+  nameEn    String?
+  code      String?
+  branchId  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branch       Branch        @relation(fields: [branchId], references: [id])
+  users        User[]
+  requisitions Requisition[]
+
+  @@map("departments")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  employeeId   String    @unique // رقم الموظف
+  nameAr       String    // الاسم بالعربي
+  nameEn       String?   // الاسم بالانجليزي
+  email        String    @unique
+  password     String    // hashed
+  role         String    @default("EMPLOYEE") // SUPER_ADMIN, PURCHASE_MANAGER, BRANCH_MANAGER, DEPARTMENT_HEAD, WAREHOUSE_KEEPER, ACCOUNTANT, EMPLOYEE
+  branchId     String?
+  departmentId String?
+  phone        String?
+  avatar       String?
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  branch     Branch?     @relation(fields: [branchId], references: [id])
+  department Department? @relation(fields: [departmentId], references: [id])
+
+  requisitionsCreated     Requisition[]   @relation("RequisitionCreator")
+  approvalLogs            ApprovalLog[]
+  approvalStepsAsApprover ApprovalStep[]  @relation("ApproverUser")
+
+  @@map("users")
+}
+
+// =============================================
+// PRODUCT CATALOG
+// =============================================
+
+model Category {
+  id        String     @id @default(cuid())
+  nameAr    String
+  nameEn    String?
+  parentId  String?
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  parent   Category?  @relation("CategoryParent", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryParent")
+  products Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  nameAr      String
+  nameEn      String?
+  code        String   @unique
+  description String?
+  unit        String   // وحدة القياس
+  categoryId  String
+  minStock    Float    @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  category         Category          @relation(fields: [categoryId], references: [id])
+  requisitionItems RequisitionItem[]
+
+  @@map("products")
+}
+
+// =============================================
+// APPROVAL FLOW TEMPLATES
+// =============================================
+
+model ApprovalFlowTemplate {
+  id          String   @id @default(cuid())
+  name        String   // اسم المسار
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  steps        ApprovalStep[]
+  requisitions Requisition[]
+
+  @@map("approval_flow_templates")
+}
+
+model ApprovalStep {
+  id           String  @id @default(cuid())
+  flowId       String
+  stepOrder    Int     // 1, 2, 3...
+  stepNameAr   String  // اسم الخطوة
+  approverRole String  // Role name
+  approverId   String? // User ID
+  isRequired   Boolean @default(true)
+
+  flow     ApprovalFlowTemplate @relation(fields: [flowId], references: [id])
+  approver User?               @relation("ApproverUser", fields: [approverId], references: [id])
+
+  @@unique([flowId, stepOrder])
+  @@map("approval_steps")
+}
+
+// =============================================
+// REQUISITIONS
+// =============================================
+
+model Requisition {
+  id              String   @id @default(cuid())
+  requisitionNo   String   @unique
+  title           String
+  type            String   @default("PURCHASE") // PURCHASE, TRANSFER, SERVICE
+  urgency         String   @default("MEDIUM")   // LOW, MEDIUM, HIGH
+  status          String   @default("DRAFT")    // DRAFT, PENDING, APPROVED, REJECTED, CONVERTED_TO_PO, CONVERTED_TO_TRANSFER, CANCELLED
+  notes           String?
+  justification   String?
+  requiredDate    DateTime?
+
+  createdById     String
+  branchId        String
+  departmentId    String?
+  flowTemplateId  String?
+  currentStep     Int      @default(1)
+  estimatedTotal  Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdBy    User                  @relation("RequisitionCreator", fields: [createdById], references: [id])
+  branch       Branch                @relation(fields: [branchId], references: [id])
+  department   Department?           @relation(fields: [departmentId], references: [id])
+  flowTemplate ApprovalFlowTemplate? @relation(fields: [flowTemplateId], references: [id])
+
+  items        RequisitionItem[]
+  approvalLogs ApprovalLog[]
+
+  @@map("requisitions")
+}
+
+model RequisitionItem {
+  id             String  @id @default(cuid())
+  requisitionId  String
+  productId      String
+  description    String?
+  quantity       Float
+  unit           String
+  estimatedPrice Float?
+  totalPrice     Float?
+  notes          String?
+
+  requisition Requisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+  product     Product     @relation(fields: [productId], references: [id])
+
+  @@map("requisition_items")
+}
+
+// =============================================
+// APPROVAL LOGS
+// =============================================
+
+model ApprovalLog {
+  id            String   @id @default(cuid())
+  requisitionId String
+  approverId    String
+  stepOrder     Int
+  stepNameAr    String
+  action        String   // APPROVED, REJECTED, FORWARDED
+  comments      String?
+  actionAt      DateTime @default(now())
+
+  requisition Requisition @relation(fields: [requisitionId], references: [id])
+  approver    User        @relation(fields: [approverId], references: [id])
+
+  @@map("approval_logs")
+}
