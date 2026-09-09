@@ -19,7 +19,8 @@ export default function DashboardLayout({
 
   useEffect(() => {
     setMounted(true);
-    if (!isAuthenticated) {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('erp_token') : null;
+    if (!isAuthenticated && !token) {
       router.push('/login');
     }
   }, [isAuthenticated, router]);

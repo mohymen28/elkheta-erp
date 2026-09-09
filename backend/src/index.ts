@@ -50,8 +50,8 @@ app.use('/api/maintenance', maintenanceRoutes);
 // Global Error Handler
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`🚀 Elkheta ERP Server running on port ${PORT}`);
+const server = app.listen(Number(PORT), '0.0.0.0', () => {
+  console.log(`🚀 Elkheta ERP Server running on port ${PORT} (0.0.0.0)`);
   console.log(`📡 API available at http://localhost:${PORT}/api`);
 });
 
