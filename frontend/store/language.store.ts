@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type Language = 'ar' | 'en';
+export type Language = 'en' | 'ar';
 
 interface LanguageState {
   language: Language;
@@ -11,6 +11,89 @@ interface LanguageState {
 }
 
 export const translations: Record<Language, Record<string, string>> = {
+  en: {
+    // Brand & Header
+    'brand.title': 'Elkheta ERP',
+    'brand.subtitle': 'Enterprise Management System',
+    'header.title': 'Procurement, Inventory & Operations System',
+    'header.logout': 'Logout',
+    'header.connected': 'Server Connected',
+    'header.language': 'العربية (AR)',
+
+    // Navigation
+    'nav.dashboard': 'Dashboard',
+    'nav.requisitions': 'Purchase Requisitions',
+    'nav.pendingApprovals': 'Pending Approvals',
+    'nav.purchasing': 'Purchasing (POs)',
+    'nav.inventory': 'Inventory & Transfers',
+    'nav.maintenance': 'Maintenance Orders',
+    'nav.products': 'Product Catalog',
+    'nav.branches': 'Branches & Locations',
+    'nav.users': 'Users & Permissions',
+    'nav.settings': 'System Settings',
+
+    // Dashboard
+    'dashboard.welcome': 'Welcome back',
+    'dashboard.stats.total': 'Total Requests',
+    'dashboard.stats.pending': 'Under Review',
+    'dashboard.stats.approved': 'Approved',
+    'dashboard.stats.rejected': 'Rejected',
+    'dashboard.newRequest': 'New Requisition Request',
+    'dashboard.recentRequests': 'Recent Activity',
+    'dashboard.viewAll': 'View All',
+
+    // Branches
+    'branches.title': 'Branches & Stores Structure',
+    'branches.subtitle': 'Operational branches, central warehouses, and assigned managers',
+    'branches.add': 'Add New Branch',
+    'branches.edit': 'Edit Branch',
+    'branches.delete': 'Deactivate Branch',
+    'branches.nameAr': 'Branch Name (Arabic)',
+    'branches.nameEn': 'Branch Name (English)',
+    'branches.code': 'Branch Code',
+    'branches.manager': 'Assigned Manager',
+    'branches.phone': 'Phone / Contact',
+    'branches.address': 'Address / Location',
+    'branches.save': 'Save Branch',
+    'branches.cancel': 'Cancel',
+    'branches.employeeCount': 'Employees',
+    'branches.deptCount': 'Departments',
+
+    // Statuses
+    'status.DRAFT': 'Draft',
+    'status.PENDING': 'Pending Review',
+    'status.APPROVED': 'Approved',
+    'status.REJECTED': 'Rejected',
+    'status.CANCELLED': 'Cancelled',
+    'status.CONVERTED_TO_PO': 'Converted to PO',
+    'status.CONVERTED_TO_TRANSFER': 'Converted to Transfer',
+    'status.RECEIVED': 'Received',
+
+    // Roles
+    'role.SUPER_ADMIN': 'Super Admin (Executive)',
+    'role.PURCHASE_MANAGER': 'Procurement Manager',
+    'role.BRANCH_MANAGER': 'Branch Manager',
+    'role.DEPARTMENT_HEAD': 'Department Head',
+    'role.WAREHOUSE_KEEPER': 'Warehouse Keeper',
+    'role.ACCOUNTANT': 'Accountant',
+    'role.EMPLOYEE': 'Employee',
+
+    // Common
+    'common.search': 'Search...',
+    'common.actions': 'Actions',
+    'common.date': 'Date',
+    'common.status': 'Status',
+    'common.total': 'Total',
+    'common.loading': 'Loading...',
+    'common.empty': 'No data available',
+    'common.save': 'Save',
+    'common.cancel': 'Cancel',
+    'common.edit': 'Edit',
+    'common.delete': 'Delete',
+    'common.close': 'Close',
+    'common.success': 'Operation completed successfully',
+    'common.error': 'An error occurred, please try again',
+  },
   ar: {
     // Brand & Header
     'brand.title': 'منظومة الخطة',
@@ -18,6 +101,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'header.title': 'نظام إدارة طلبات الاحتياج والمشتريات والمخازن',
     'header.logout': 'تسجيل الخروج',
     'header.connected': 'الخادم متصل',
+    'header.language': 'English (EN)',
 
     // Navigation
     'nav.dashboard': 'لوحة التحكم',
@@ -66,11 +150,16 @@ export const translations: Record<Language, Record<string, string>> = {
     'status.CANCELLED': 'ملغي',
     'status.CONVERTED_TO_PO': 'تم التحويل لأمر شراء',
     'status.CONVERTED_TO_TRANSFER': 'تم التحويل لنقل مخزني',
+    'status.RECEIVED': 'مستلم',
 
-    // Urgency
-    'urgency.LOW': 'منخفض',
-    'urgency.MEDIUM': 'متوسط',
-    'urgency.HIGH': 'عاجل جداً',
+    // Roles
+    'role.SUPER_ADMIN': 'الإدارة العليا / مدير النظام',
+    'role.PURCHASE_MANAGER': 'مدير المشتريات',
+    'role.BRANCH_MANAGER': 'مدير الفرع',
+    'role.DEPARTMENT_HEAD': 'رئيس القسم',
+    'role.WAREHOUSE_KEEPER': 'أمين المخزن',
+    'role.ACCOUNTANT': 'محاسب',
+    'role.EMPLOYEE': 'موظف',
 
     // Common
     'common.search': 'بحث...',
@@ -88,99 +177,22 @@ export const translations: Record<Language, Record<string, string>> = {
     'common.success': 'تمت العملية بنجاح',
     'common.error': 'حدث خطأ، يرجى المحاولة لاحقاً',
   },
-  en: {
-    // Brand & Header
-    'brand.title': 'Elkheta System',
-    'brand.subtitle': 'Operations ERP System',
-    'header.title': 'Procurement, Inventory & Requisitions System',
-    'header.logout': 'Logout',
-    'header.connected': 'Server Connected',
-
-    // Navigation
-    'nav.dashboard': 'Dashboard',
-    'nav.requisitions': 'Internal Requisitions',
-    'nav.pendingApprovals': 'Pending Approvals',
-    'nav.purchasing': 'Purchase Orders (POs)',
-    'nav.inventory': 'Inventory & Transfers',
-    'nav.maintenance': 'Maintenance Orders',
-    'nav.products': 'Product Catalog',
-    'nav.branches': 'Branches & Structure',
-    'nav.users': 'Users & Permissions',
-    'nav.settings': 'Settings',
-
-    // Dashboard
-    'dashboard.welcome': 'Welcome back',
-    'dashboard.stats.total': 'Total Requests',
-    'dashboard.stats.pending': 'Under Approval',
-    'dashboard.stats.approved': 'Approved Requests',
-    'dashboard.stats.rejected': 'Rejected Requests',
-    'dashboard.newRequest': 'New Requisition Request',
-    'dashboard.recentRequests': 'Recent Requisitions',
-    'dashboard.viewAll': 'View All',
-
-    // Branches
-    'branches.title': 'Branches & Stores Structure',
-    'branches.subtitle': 'Geographical branches, associated warehouses and assigned managers',
-    'branches.add': 'Add New Branch',
-    'branches.edit': 'Edit Branch',
-    'branches.delete': 'Deactivate Branch',
-    'branches.nameAr': 'Branch Name (Arabic)',
-    'branches.nameEn': 'Branch Name (English)',
-    'branches.code': 'Branch Code',
-    'branches.manager': 'Assigned Manager',
-    'branches.phone': 'Phone / Contact',
-    'branches.address': 'Address / Location',
-    'branches.save': 'Save Branch',
-    'branches.cancel': 'Cancel',
-    'branches.employeeCount': 'Employees',
-    'branches.deptCount': 'Departments',
-
-    // Statuses
-    'status.DRAFT': 'Draft',
-    'status.PENDING': 'Pending Approval',
-    'status.APPROVED': 'Approved',
-    'status.REJECTED': 'Rejected',
-    'status.CANCELLED': 'Cancelled',
-    'status.CONVERTED_TO_PO': 'Converted to PO',
-    'status.CONVERTED_TO_TRANSFER': 'Converted to Transfer',
-
-    // Urgency
-    'urgency.LOW': 'Low',
-    'urgency.MEDIUM': 'Medium',
-    'urgency.HIGH': 'Urgent',
-
-    // Common
-    'common.search': 'Search...',
-    'common.actions': 'Actions',
-    'common.date': 'Date',
-    'common.status': 'Status',
-    'common.total': 'Total',
-    'common.loading': 'Loading...',
-    'common.empty': 'No data available',
-    'common.save': 'Save',
-    'common.cancel': 'Cancel',
-    'common.edit': 'Edit',
-    'common.delete': 'Delete',
-    'common.close': 'Close',
-    'common.success': 'Operation completed successfully',
-    'common.error': 'An error occurred, please try again',
-  },
 };
 
 export const useLanguageStore = create<LanguageState>()(
   persist(
     (set, get) => ({
-      language: 'ar',
+      language: 'en', // English as primary default
       setLanguage: (lang: Language) => set({ language: lang }),
       toggleLanguage: () =>
-        set((state) => ({ language: state.language === 'ar' ? 'en' : 'ar' })),
+        set((state) => ({ language: state.language === 'en' ? 'ar' : 'en' })),
       t: (key: string) => {
-        const lang = get().language || 'ar';
+        const lang = get().language || 'en';
         return translations[lang]?.[key] || key;
       },
     }),
     {
-      name: 'elkheta_language_pref',
+      name: 'elkheta_language_pref_v2',
     }
   )
 );

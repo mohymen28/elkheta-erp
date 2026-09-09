@@ -1,16 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
+import { useLanguageStore } from '@/store/language.store';
 import api from '@/lib/api';
-import { Building2, KeyRound, Mail, ArrowLeft, ShieldAlert, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
+import { Building2, KeyRound, Mail, ArrowRight, ArrowLeft, ShieldAlert, ChevronDown, ChevronUp, Sparkles, Globe } from 'lucide-react';
 
 const demoUsers = [
-  { label: 'مدير النظام (الإدارة)', email: 'admin@elkheta.com', pass: 'Admin@1234', color: 'bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200' },
-  { label: 'مدير المشتريات', email: 'purchase@elkheta.com', pass: 'Purchase@1234', color: 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200' },
-  { label: 'مدير فرع سباهي', email: 'manager.spahi@elkheta.com', pass: 'Branch@1234', color: 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200' },
-  { label: 'مدير فرع جليم 1', email: 'manager.gleem1@elkheta.com', pass: 'Branch@1234', color: 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200' },
+  { labelEn: 'Super Admin (HQ)', labelAr: 'مدير النظام (الإدارة)', email: 'admin@elkheta.com', pass: 'Admin@1234', color: 'bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200' },
+  { labelEn: 'Procurement Manager', labelAr: 'مدير المشتريات', email: 'purchase@elkheta.com', pass: 'Purchase@1234', color: 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200' },
+  { labelEn: 'Spahi Branch Manager', labelAr: 'مدير فرع سباهي', email: 'manager.spahi@elkheta.com', pass: 'Branch@1234', color: 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200' },
+  { labelEn: 'Gleem 1 Manager', labelAr: 'مدير فرع جليم 1', email: 'manager.gleem1@elkheta.com', pass: 'Branch@1234', color: 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200' },
 ];
 
 export default function LoginPage() {
@@ -20,7 +20,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showDemo, setShowDemo] = useState(false);
   const { setAuth } = useAuthStore();
-  const router = useRouter();
+  const { language, toggleLanguage } = useLanguageStore();
+
+  const isEn = language === 'en';
 
   const handleLogin = async (e?: React.FormEvent, customEmail?: string, customPass?: string) => {
     if (e) e.preventDefault();
@@ -36,12 +38,22 @@ export default function LoginPage() {
         password: loginPass,
       });
 
-      setAuth(data.data.user, data.data.token);
-      router.push('/dashboard');
+      if (data?.data?.user && data?.data?.token) {
+        setAuth(data.data.user, data.data.token);
+        // Instant full-window navigation to avoid Next.js router freeze
+        window.location.href = '/dashboard';
+      } else {
+        setError(isEn ? 'Invalid server response' : 'استجابة غير صحيحة من الخادم');
+        setLoading(false);
+      }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'تعذر تسجيل الدخول، يرجى التأكد من تشغيل الخادم وصحة البيانات');
-    } finally {
       setLoading(false);
+      const msg = err.response?.data?.message;
+      if (msg) {
+        setError(msg);
+      } else {
+        setError(isEn ? 'Unable to connect to server. Please check your credentials.' : 'تعذر الاتصال بالخادم، يرجى التأكد من تشغيل الخادم وصحة البيانات');
+      }
     }
   };
 
@@ -52,9 +64,20 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 relative overflow-hidden" dir="rtl">
+    <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 relative overflow-hidden" dir={isEn ? 'ltr' : 'rtl'}>
       {/* Background Glow */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-blue-600/15 rounded-full blur-3xl pointer-events-none"></div>
+
+      {/* Language Switcher on Login */}
+      <div className="absolute top-6 right-6 z-20">
+        <button
+          onClick={toggleLanguage}
+          className="flex items-center gap-1.5 bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white px-3.5 py-1.5 rounded-xl border border-slate-800 transition text-xs font-bold shadow-lg backdrop-blur-md cursor-pointer"
+        >
+          <Globe className="w-3.5 h-3.5 text-blue-400" />
+          <span>{isEn ? 'العربية (AR)' : 'English (EN)'}</span>
+        </button>
+      </div>
 
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-100 p-8 relative z-10">
         {/* Header */}
@@ -62,8 +85,12 @@ export default function LoginPage() {
           <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-tr from-blue-700 to-indigo-600 rounded-2xl shadow-lg shadow-blue-500/30 mb-3 text-white">
             <Building2 className="w-7 h-7" />
           </div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight">نظام إدارة الموارد (ERP)</h1>
-          <p className="text-slate-500 text-xs mt-1">سجل الدخول للمتابعة إلى النظام التشغيلي</p>
+          <h1 className="text-2xl font-black text-slate-800 tracking-tight">
+            {isEn ? 'Elkheta ERP System' : 'نظام إدارة الموارد (ERP)'}
+          </h1>
+          <p className="text-slate-500 text-xs mt-1">
+            {isEn ? 'Sign in to access your enterprise dashboard' : 'سجل الدخول للمتابعة إلى النظام التشغيلي'}
+          </p>
         </div>
 
         {error && (
@@ -75,31 +102,35 @@ export default function LoginPage() {
 
         <form onSubmit={(e) => handleLogin(e)} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">البريد الإلكتروني</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              {isEn ? 'Email Address' : 'البريد الإلكتروني'}
+            </label>
             <div className="relative">
-              <Mail className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Mail className={`absolute ${isEn ? 'left-3.5' : 'right-3.5'} top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400`} />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@elkheta.com"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl pr-10 pl-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
+                className={`w-full bg-slate-50 border border-slate-200 rounded-xl ${isEn ? 'pl-10 pr-4' : 'pr-10 pl-4'} py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition`}
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">كلمة المرور</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              {isEn ? 'Password' : 'كلمة المرور'}
+            </label>
             <div className="relative">
-              <KeyRound className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <KeyRound className={`absolute ${isEn ? 'left-3.5' : 'right-3.5'} top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400`} />
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl pr-10 pl-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
+                className={`w-full bg-slate-50 border border-slate-200 rounded-xl ${isEn ? 'pl-10 pr-4' : 'pr-10 pl-4'} py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition`}
               />
             </div>
           </div>
@@ -113,8 +144,8 @@ export default function LoginPage() {
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             ) : (
               <>
-                <span>دخول النظام</span>
-                <ArrowLeft className="w-4 h-4" />
+                <span>{isEn ? 'Sign In' : 'دخول النظام'}</span>
+                {isEn ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
               </>
             )}
           </button>
@@ -125,11 +156,11 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={() => setShowDemo(!showDemo)}
-            className="w-full flex items-center justify-between text-[11px] font-semibold text-slate-500 hover:text-blue-600 py-1 transition"
+            className="w-full flex items-center justify-between text-[11px] font-semibold text-slate-500 hover:text-blue-600 py-1 transition cursor-pointer"
           >
             <span className="flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-              حسابات الدخول السريع للأدوار والفروع
+              {isEn ? 'Quick Login Presets (Roles & Branches)' : 'حسابات الدخول السريع للأدوار والفروع'}
             </span>
             {showDemo ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
@@ -143,7 +174,7 @@ export default function LoginPage() {
                   onClick={() => handleQuickLogin(u.email, u.pass)}
                   className={`text-[11px] font-medium p-2.5 rounded-xl border transition text-center active:scale-95 cursor-pointer ${u.color}`}
                 >
-                  <p className="font-bold">{u.label}</p>
+                  <p className="font-bold">{isEn ? u.labelEn : u.labelAr}</p>
                   <p className="text-[10px] opacity-75 mt-0.5">{u.email.split('@')[0]}</p>
                 </button>
               ))}

@@ -46,7 +46,7 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         if (typeof window !== 'undefined') {
           localStorage.removeItem('erp_token');
-          localStorage.removeItem('erp_user');
+          localStorage.removeItem('erp_user_storage');
         }
         set({ user: null, token: null, isAuthenticated: false });
       },
@@ -59,6 +59,16 @@ export const useAuthStore = create<AuthState>()(
 );
 
 export const roleLabels: Record<Role, string> = {
+  SUPER_ADMIN: 'Super Admin',
+  PURCHASE_MANAGER: 'Procurement Manager',
+  BRANCH_MANAGER: 'Branch Manager',
+  DEPARTMENT_HEAD: 'Department Head',
+  WAREHOUSE_KEEPER: 'Warehouse Keeper',
+  ACCOUNTANT: 'Accountant',
+  EMPLOYEE: 'Staff Member',
+};
+
+export const roleLabelsAr: Record<Role, string> = {
   SUPER_ADMIN: 'الإدارة العليا / مدير النظام',
   PURCHASE_MANAGER: 'مدير المشتريات',
   BRANCH_MANAGER: 'مدير الفرع',
