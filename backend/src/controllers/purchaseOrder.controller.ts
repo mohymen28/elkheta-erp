@@ -87,8 +87,8 @@ export const createPurchaseOrder = async (req: AuthRequest, res: Response, next:
         branchId,
         requisitionId: requisitionId || null,
         createdById: req.user!.id,
-        status: 'APPROVED',
-        matchVerified: true,
+        status: 'DRAFT',
+        matchVerified: false,
         totalAmount,
         notes: notes || null,
         deliveryDate: deliveryDate ? new Date(deliveryDate) : null,
@@ -116,7 +116,87 @@ export const createPurchaseOrder = async (req: AuthRequest, res: Response, next:
       });
     }
 
-    res.status(201).json({ success: true, message: `تم إصدار أمر الشراء ${poNumber} بنجاح`, data: order });
+    res.status(201).json({ success: true, message: `تم إصدار أمر الشراء ${poNumber} بنجاح — في انتظار الاعتماد`, data: order });
+  } catch (err) { next(err); }
+};
+
+// PATCH /api/purchase-orders/:id/approve
+export const approveOrder = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const user = req.user!;
+
+    const order = await prisma.purchaseOrder.findUnique({ where: { id } });
+    if (!order) throw new AppError('أمر الشراء غير موجود', 404);
+    if (order.status !== 'DRAFT') throw new AppError('لا يمكن اعتماد هذا الأمر — حالته الحالية: ' + order.status, 400);
+
+    const updated = await prisma.purchaseOrder.update({
+      where: { id },
+      data: {
+        status: 'APPROVED',
+        matchVerified: true,
+      },
+      include: {
+        vendor: { select: { nameAr: true } },
+        branch: { select: { nameAr: true } },
+        items: { include: { product: { select: { nameAr: true } } } },
+      },
+    });
+
+    res.json({ success: true, message: `تم اعتماد أمر الشراء ${order.poNumber} بنجاح`, data: updated });
+  } catch (err) { next(err); }
+};
+
+// PATCH /api/purchase-orders/:id/receive
+export const receiveOrder = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+
+    const order = await prisma.purchaseOrder.findUnique({
+      where: { id },
+      include: { items: true },
+    });
+    if (!order) throw new AppError('أمر الشراء غير موجود', 404);
+    if (order.status !== 'APPROVED') throw new AppError('لا يمكن تسجيل استلام هذا الأمر — يجب أن يكون معتمداً أولاً', 400);
+
+    // تحديث المخزون لكل صنف
+    for (const item of order.items) {
+      await prisma.stock.upsert({
+        where: {
+          branchId_productId: {
+            branchId: order.branchId,
+            productId: item.productId,
+          },
+        },
+        update: {
+          quantity: { increment: item.quantity },
+        },
+        create: {
+          branchId: order.branchId,
+          productId: item.productId,
+          quantity: item.quantity,
+          minStock: 0,
+        },
+      });
+
+      // تحديث الكمية المستلمة في بنود الأمر
+      await prisma.purchaseOrderItem.update({
+        where: { id: item.id },
+        data: { receivedQty: item.quantity },
+      });
+    }
+
+    const updated = await prisma.purchaseOrder.update({
+      where: { id },
+      data: { status: 'RECEIVED' },
+      include: {
+        vendor: { select: { nameAr: true } },
+        branch: { select: { nameAr: true } },
+        items: { include: { product: { select: { nameAr: true, unit: true } } } },
+      },
+    });
+
+    res.json({ success: true, message: `تم تسجيل استلام أمر الشراء ${order.poNumber} وتحديث المخزون`, data: updated });
   } catch (err) { next(err); }
 };
 
