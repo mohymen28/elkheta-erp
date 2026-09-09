@@ -33,9 +33,9 @@ export const getBranchById = async (req: AuthRequest, res: Response, next: NextF
 
 export const createBranch = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { nameAr, nameEn, code, address, phone } = req.body;
+    const { nameAr, nameEn, code, address, phone, managerName } = req.body;
     if (!nameAr || !code) throw new AppError('يرجى إدخال اسم الفرع والكود', 400);
-    const branch = await prisma.branch.create({ data: { nameAr, nameEn, code, address, phone } });
+    const branch = await prisma.branch.create({ data: { nameAr, nameEn, code, address, phone, managerName } });
     res.status(201).json({ success: true, message: 'تم إنشاء الفرع بنجاح', data: branch });
   } catch (err) { next(err); }
 };

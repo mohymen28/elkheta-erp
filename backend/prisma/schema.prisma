@@ -21,6 +21,7 @@ model Branch {
   code        String   @unique // كود الفرع
   address     String?
   phone       String?
+  managerName String?  // اسم مدير الفرع
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

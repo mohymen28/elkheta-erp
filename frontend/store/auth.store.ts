@@ -19,8 +19,8 @@ export interface User {
   role: Role;
   branchId?: string | null;
   departmentId?: string | null;
-  branch?: { id: string; nameAr: string; code: string } | null;
-  department?: { id: string; nameAr: string } | null;
+  branch?: { id: string; nameAr: string; code: string; nameEn?: string | null; managerName?: string | null } | null;
+  department?: { id: string; nameAr: string; nameEn?: string | null } | null;
 }
 
 interface AuthState {

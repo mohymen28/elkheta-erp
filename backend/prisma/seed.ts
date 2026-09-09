@@ -4,81 +4,126 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 بدء تعبئة البيانات الأولية للنظام...');
+  console.log('🌱 بدء تعبئة البيانات الأولية المحدثة للفروع...');
 
-  // 1. إنشاء الفروع
-  const mainBranch = await prisma.branch.upsert({
-    where: { code: 'HQ' },
-    update: {},
-    create: {
-      nameAr: 'المقر الرئيسي (الرياض)',
-      nameEn: 'Headquarters',
+  // 1. الفروع المحدثة
+  const branchesData = [
+    {
       code: 'HQ',
-      address: 'طريق الملك فهد، الرياض، المملكة العربية السعودية',
-      phone: '0112345678',
+      nameAr: 'المقر الرئيسي والمخزن المركزي',
+      nameEn: 'Headquarters & Central Warehouse',
+      address: 'الإدارة المركزية والمستودع الرئيسي',
+      phone: '01000000000',
+      managerName: 'م/ عبدالرحمن السعدون',
     },
-  });
-
-  const branchRiyadh = await prisma.branch.upsert({
-    where: { code: 'BR-01' },
-    update: {},
-    create: {
-      nameAr: 'فرع الرياض - العليا',
-      nameEn: 'Riyadh Branch - Olaya',
-      code: 'BR-01',
-      address: 'حي العليا، الرياض',
-      phone: '0119876543',
+    {
+      code: 'SPH-01',
+      nameAr: 'سباهي',
+      nameEn: 'Spahi Branch',
+      address: 'فرع سباهي',
+      phone: '01011112222',
+      managerName: 'أ/ أحمد محمود',
     },
-  });
-
-  const branchJeddah = await prisma.branch.upsert({
-    where: { code: 'BR-02' },
-    update: {},
-    create: {
-      nameAr: 'فرع جدة - الروضة',
-      nameEn: 'Jeddah Branch - Rawdah',
-      code: 'BR-02',
-      address: 'حي الروضة، جدة',
-      phone: '0122345678',
+    {
+      code: 'GLM-01',
+      nameAr: 'جليم 1',
+      nameEn: 'Gleem 1 Branch',
+      address: 'طريق الكورنيش، جليم',
+      phone: '01022223333',
+      managerName: 'أ/ طارق فهمي',
     },
-  });
+    {
+      code: 'GLM-02',
+      nameAr: 'جليم 2',
+      nameEn: 'Gleem 2 Branch',
+      address: 'شارع أبو قير، جليم',
+      phone: '01033334444',
+      managerName: 'أ/ يوسف إبراهيم',
+    },
+    {
+      code: 'RNN-01',
+      nameAr: 'رنين',
+      nameEn: 'Raneen Branch',
+      address: 'فرع رنين الرئيسي',
+      phone: '01044445555',
+      managerName: 'أ/ كريم عبدالعزيز',
+    },
+    {
+      code: 'MBR-01',
+      nameAr: 'المبره',
+      nameEn: 'El Mabara Branch',
+      address: 'فرع المبرة',
+      phone: '01055556666',
+      managerName: 'أ/ سارة النجار',
+    },
+    {
+      code: 'SLM-01',
+      nameAr: 'دار السالميه',
+      nameEn: 'Dar El Salmiya Branch',
+      address: 'فرع دار السالمية',
+      phone: '01066667777',
+      managerName: 'أ/ هاني شاكر',
+    },
+  ];
 
-  console.log('✅ تم إنشاء الفروع الثلاثة');
+  const createdBranches: Record<string, any> = {};
+
+  for (const b of branchesData) {
+    const branch = await prisma.branch.upsert({
+      where: { code: b.code },
+      update: {
+        nameAr: b.nameAr,
+        nameEn: b.nameEn,
+        address: b.address,
+        phone: b.phone,
+        managerName: b.managerName,
+        isActive: true,
+      },
+      create: b,
+    });
+    createdBranches[b.code] = branch;
+  }
+
+  console.log('✅ تم إنشاء وتحديث كافة الفروع الـ 7 مع أسماء المديرين بنجاح');
 
   // 2. إنشاء الأقسام
+  const hq = createdBranches['HQ'];
+  const spahi = createdBranches['SPH-01'];
+  const gleem1 = createdBranches['GLM-01'];
+
   const deptPurchasing = await prisma.department.upsert({
     where: { id: 'dept-purchasing' },
-    update: {},
+    update: { branchId: hq.id },
     create: {
       id: 'dept-purchasing',
       nameAr: 'إدارة المشتريات المركزية',
       nameEn: 'Central Purchasing Dept',
       code: 'PURCH',
-      branchId: mainBranch.id,
+      branchId: hq.id,
     },
   });
 
-  const deptOps1 = await prisma.department.upsert({
-    where: { id: 'dept-ops-1' },
-    update: {},
+  const deptOpsSpahi = await prisma.department.upsert({
+    where: { id: 'dept-ops-spahi' },
+    update: { branchId: spahi.id },
     create: {
-      id: 'dept-ops-1',
-      nameAr: 'قسم التشغيل والصيانة',
+      id: 'dept-ops-spahi',
+      nameAr: 'قسم العمليات والصيانة',
       nameEn: 'Operations & Maintenance',
-      code: 'OPS-01',
-      branchId: branchRiyadh.id,
+      code: 'OPS-SPH',
+      branchId: spahi.id,
     },
   });
 
-  const deptOps2 = await prisma.department.upsert({
-    where: { id: 'dept-ops-2' },
-    update: {},
+  const deptOpsGleem = await prisma.department.upsert({
+    where: { id: 'dept-ops-gleem' },
+    update: { branchId: gleem1.id },
     create: {
-      id: 'dept-ops-2',
-      nameAr: 'قسم العمليات والمخازن',
-      nameEn: 'Operations & Warehouse',
-      code: 'OPS-02',
-      branchId: branchJeddah.id,
+      id: 'dept-ops-gleem',
+      nameAr: 'قسم التشغيل',
+      nameEn: 'Operations',
+      code: 'OPS-GLM1',
+      branchId: gleem1.id,
     },
   });
 
@@ -89,7 +134,7 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: 'admin@elkheta.com' },
-    update: {},
+    update: { branchId: hq.id },
     create: {
       employeeId: 'EMP-001',
       nameAr: 'عبدالرحمن السعدون (الإدارة العليا)',
@@ -97,14 +142,14 @@ async function main() {
       email: 'admin@elkheta.com',
       password: await hashPwd('Admin@1234'),
       role: 'SUPER_ADMIN',
-      branchId: mainBranch.id,
-      phone: '0500000001',
+      branchId: hq.id,
+      phone: '01000000001',
     },
   });
 
   await prisma.user.upsert({
     where: { email: 'purchase@elkheta.com' },
-    update: {},
+    update: { branchId: hq.id, departmentId: deptPurchasing.id },
     create: {
       employeeId: 'EMP-002',
       nameAr: 'أحمد الزهراني (مدير المشتريات)',
@@ -112,61 +157,83 @@ async function main() {
       email: 'purchase@elkheta.com',
       password: await hashPwd('Purchase@1234'),
       role: 'PURCHASE_MANAGER',
-      branchId: mainBranch.id,
+      branchId: hq.id,
       departmentId: deptPurchasing.id,
-      phone: '0500000002',
+      phone: '01000000002',
     },
   });
 
+  // تحديث مديري الفروع لربطهم بالفروع الجديدة بدون تعارض في employeeId
   await prisma.user.upsert({
-    where: { email: 'manager.riyadh@elkheta.com' },
-    update: {},
+    where: { employeeId: 'EMP-003' },
+    update: {
+      nameAr: 'أحمد محمود (مدير فرع سباهي)',
+      nameEn: 'Ahmed Mahmoud (Spahi Manager)',
+      email: 'manager.spahi@elkheta.com',
+      branchId: spahi.id,
+      departmentId: deptOpsSpahi.id,
+      role: 'BRANCH_MANAGER',
+    },
     create: {
       employeeId: 'EMP-003',
-      nameAr: 'محمد العتيبي (مدير فرع الرياض)',
-      nameEn: 'Mohammed Al-Otaibi',
-      email: 'manager.riyadh@elkheta.com',
+      nameAr: 'أحمد محمود (مدير فرع سباهي)',
+      nameEn: 'Ahmed Mahmoud (Spahi Manager)',
+      email: 'manager.spahi@elkheta.com',
       password: await hashPwd('Manager@1234'),
       role: 'BRANCH_MANAGER',
-      branchId: branchRiyadh.id,
-      departmentId: deptOps1.id,
-      phone: '0500000003',
+      branchId: spahi.id,
+      departmentId: deptOpsSpahi.id,
+      phone: '01011112222',
     },
   });
 
   await prisma.user.upsert({
-    where: { email: 'employee.riyadh@elkheta.com' },
-    update: {},
+    where: { employeeId: 'EMP-004' },
+    update: {
+      nameAr: 'علي حسن (موظف فرع سباهي)',
+      nameEn: 'Ali Hassan',
+      email: 'employee.spahi@elkheta.com',
+      branchId: spahi.id,
+      departmentId: deptOpsSpahi.id,
+      role: 'EMPLOYEE',
+    },
     create: {
       employeeId: 'EMP-004',
-      nameAr: 'خالد الدوسري (موظف فرع الرياض)',
-      nameEn: 'Khalid Al-Dosari',
-      email: 'employee.riyadh@elkheta.com',
+      nameAr: 'علي حسن (موظف فرع سباهي)',
+      nameEn: 'Ali Hassan',
+      email: 'employee.spahi@elkheta.com',
       password: await hashPwd('Employee@1234'),
       role: 'EMPLOYEE',
-      branchId: branchRiyadh.id,
-      departmentId: deptOps1.id,
-      phone: '0500000004',
+      branchId: spahi.id,
+      departmentId: deptOpsSpahi.id,
+      phone: '01011112223',
     },
   });
 
   await prisma.user.upsert({
-    where: { email: 'manager.jeddah@elkheta.com' },
-    update: {},
+    where: { employeeId: 'EMP-005' },
+    update: {
+      nameAr: 'طارق فهمي (مدير فرع جليم 1)',
+      nameEn: 'Tarek Fahmy',
+      email: 'manager.gleem1@elkheta.com',
+      branchId: gleem1.id,
+      departmentId: deptOpsGleem.id,
+      role: 'BRANCH_MANAGER',
+    },
     create: {
       employeeId: 'EMP-005',
-      nameAr: 'عبدالله القحطاني (مدير فرع جدة)',
-      nameEn: 'Abdullah Al-Qahtani',
-      email: 'manager.jeddah@elkheta.com',
+      nameAr: 'طارق فهمي (مدير فرع جليم 1)',
+      nameEn: 'Tarek Fahmy',
+      email: 'manager.gleem1@elkheta.com',
       password: await hashPwd('Manager@1234'),
       role: 'BRANCH_MANAGER',
-      branchId: branchJeddah.id,
-      departmentId: deptOps2.id,
-      phone: '0500000005',
+      branchId: gleem1.id,
+      departmentId: deptOpsGleem.id,
+      phone: '01022223333',
     },
   });
 
-  console.log('✅ تم إنشاء المستخدمين بمختلف الصلاحيات والأدوار');
+  console.log('✅ تم إنشاء وتحديث المستخدمين');
 
   // 4. فئات الأصناف
   const catMaterials = await prisma.category.upsert({
@@ -178,7 +245,7 @@ async function main() {
   const catEquipment = await prisma.category.upsert({
     where: { id: 'cat-equipment' },
     update: {},
-    create: { id: 'cat-equipment', nameAr: 'معدات وأدوات صيانة', nameEn: 'Equipment & Maintenance Tools' },
+    create: { id: 'cat-equipment', nameAr: 'معدات وأدوات صيانة', nameEn: 'Equipment & Tools' },
   });
 
   const catSpares = await prisma.category.upsert({
@@ -228,8 +295,8 @@ async function main() {
 
   console.log('✅ تم إنشاء الأصناف في الدليل');
 
-  // 6. مسار الموافقات الافتراضي (Approval Flow)
-  const defaultFlow = await prisma.approvalFlowTemplate.upsert({
+  // 6. مسار الموافقات الافتراضي
+  await prisma.approvalFlowTemplate.upsert({
     where: { id: 'flow-standard' },
     update: {},
     create: {
@@ -246,43 +313,7 @@ async function main() {
   });
 
   console.log('✅ تم إنشاء مسار الموافقات القياسي');
-
-  // 7. إنشاء طلب احتياج تجريبي لإظهار الواجهة ممتلئة
-  const emp = await prisma.user.findUnique({ where: { email: 'employee.riyadh@elkheta.com' } });
-  const prod1 = await prisma.product.findUnique({ where: { code: 'PRD-001' } });
-  const prod2 = await prisma.product.findUnique({ where: { code: 'PRD-002' } });
-
-  if (emp && prod1 && prod2) {
-    const existingReq = await prisma.requisition.findFirst({ where: { requisitionNo: 'REQ-2026-0001' } });
-    if (!existingReq) {
-      await prisma.requisition.create({
-        data: {
-          requisitionNo: 'REQ-2026-0001',
-          title: 'طلب مستلزمات مكتبية وأحبار لفرع الرياض',
-          type: 'PURCHASE',
-          urgency: 'MEDIUM',
-          status: 'PENDING',
-          notes: 'مطلوبة لبدء الدورة المستندية للشهر الجديد',
-          justification: 'نفاد مخزون الورق والأحبار في قسم الاستقبال والعمليات بالفرع',
-          createdById: emp.id,
-          branchId: branchRiyadh.id,
-          departmentId: deptOps1.id,
-          flowTemplateId: defaultFlow.id,
-          currentStep: 1,
-          estimatedTotal: 1250,
-          items: {
-            create: [
-              { productId: prod1.id, quantity: 10, unit: prod1.unit, estimatedPrice: 75, totalPrice: 750 },
-              { productId: prod2.id, quantity: 2, unit: prod2.unit, estimatedPrice: 250, totalPrice: 500 },
-            ],
-          },
-        },
-      });
-      console.log('✅ تم إنشاء طلب احتياج تجريبي معتمد في الخطوة الأولى');
-    }
-  }
-
-  console.log('\n🎉 اكتملت تهيئة وتعبئة قاعدة البيانات بنجاح!');
+  console.log('\n🎉 اكتملت تهيئة وتحديث قاعدة البيانات بكافة الفروع السبعة بنجاح!');
 }
 
 main()
