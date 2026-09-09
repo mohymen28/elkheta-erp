@@ -4,13 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
 import api from '@/lib/api';
-import { Building2, KeyRound, Mail, ArrowLeft, ShieldAlert } from 'lucide-react';
+import { Building2, KeyRound, Mail, ArrowLeft, ShieldAlert, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 
 const demoUsers = [
-  { label: 'مدير النظام (Admin)', email: 'admin@elkheta.com', pass: 'Admin@1234', color: 'bg-purple-50 text-purple-700 border-purple-200' },
-  { label: 'مدير المشتريات (HQ)', email: 'purchase@elkheta.com', pass: 'Purchase@1234', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-  { label: 'مدير فرع الرياض', email: 'manager.riyadh@elkheta.com', pass: 'Manager@1234', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  { label: 'موظف فرع الرياض', email: 'employee.riyadh@elkheta.com', pass: 'Employee@1234', color: 'bg-amber-50 text-amber-700 border-amber-200' },
+  { label: 'مدير النظام (الإدارة)', email: 'admin@elkheta.com', pass: 'Admin@1234', color: 'bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200' },
+  { label: 'مدير المشتريات', email: 'purchase@elkheta.com', pass: 'Purchase@1234', color: 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200' },
+  { label: 'مدير فرع سباهي', email: 'manager.spahi@elkheta.com', pass: 'Branch@1234', color: 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200' },
+  { label: 'مدير فرع جليم 1', email: 'manager.gleem1@elkheta.com', pass: 'Branch@1234', color: 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200' },
 ];
 
 export default function LoginPage() {
@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('Admin@1234');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
   const { setAuth } = useAuthStore();
   const router = useRouter();
 
@@ -38,7 +39,7 @@ export default function LoginPage() {
       setAuth(data.data.user, data.data.token);
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'تعذر تسجيل الدخول، يرجى التأكد من تشغيل الخادم والبيانات المدخلة');
+      setError(err.response?.data?.message || 'تعذر تسجيل الدخول، يرجى التأكد من تشغيل الخادم وصحة البيانات');
     } finally {
       setLoading(false);
     }
@@ -52,17 +53,17 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 relative overflow-hidden" dir="rtl">
-      {/* Glow Effects */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
+      {/* Background Glow */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-blue-600/15 rounded-full blur-3xl pointer-events-none"></div>
 
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-100 p-8 relative z-10">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-600 rounded-2xl shadow-lg shadow-blue-500/30 mb-3 text-white">
+        <div className="text-center mb-7">
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-tr from-blue-700 to-indigo-600 rounded-2xl shadow-lg shadow-blue-500/30 mb-3 text-white">
             <Building2 className="w-7 h-7" />
           </div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight">نظام إدارة الموارد المؤسسية</h1>
-          <p className="text-slate-400 text-xs mt-1">سجل الدخول للمتابعة إلى لوحة التحكم</p>
+          <h1 className="text-2xl font-black text-slate-800 tracking-tight">نظام إدارة الموارد (ERP)</h1>
+          <p className="text-slate-500 text-xs mt-1">سجل الدخول للمتابعة إلى النظام التشغيلي</p>
         </div>
 
         {error && (
@@ -82,7 +83,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@company.com"
+                placeholder="name@elkheta.com"
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl pr-10 pl-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
               />
             </div>
@@ -106,34 +107,48 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 transition disabled:opacity-60"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 transition disabled:opacity-60 cursor-pointer"
           >
             {loading ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             ) : (
               <>
-                <span>تسجيل الدخول</span>
+                <span>دخول النظام</span>
                 <ArrowLeft className="w-4 h-4" />
               </>
             )}
           </button>
         </form>
 
-        {/* Quick Login Presets for testing */}
-        <div className="mt-8 pt-6 border-t border-slate-100">
-          <p className="text-[11px] font-bold text-slate-400 mb-3 text-center">أو اختر حساباً تجريبياً لتجربة الأدوار المختلفة:</p>
-          <div className="grid grid-cols-2 gap-2">
-            {demoUsers.map((u) => (
-              <button
-                key={u.email}
-                type="button"
-                onClick={() => handleQuickLogin(u.email, u.pass)}
-                className={`text-[11px] font-medium p-2.5 rounded-xl border transition text-center hover:opacity-80 active:scale-95 ${u.color}`}
-              >
-                {u.label}
-              </button>
-            ))}
-          </div>
+        {/* Optional Collapsible Demo Credentials */}
+        <div className="mt-6 pt-5 border-t border-slate-100">
+          <button
+            type="button"
+            onClick={() => setShowDemo(!showDemo)}
+            className="w-full flex items-center justify-between text-[11px] font-semibold text-slate-500 hover:text-blue-600 py-1 transition"
+          >
+            <span className="flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+              حسابات الدخول السريع للأدوار والفروع
+            </span>
+            {showDemo ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+
+          {showDemo && (
+            <div className="grid grid-cols-2 gap-2 mt-3 pt-2 border-t border-dashed border-slate-100">
+              {demoUsers.map((u) => (
+                <button
+                  key={u.email}
+                  type="button"
+                  onClick={() => handleQuickLogin(u.email, u.pass)}
+                  className={`text-[11px] font-medium p-2.5 rounded-xl border transition text-center active:scale-95 cursor-pointer ${u.color}`}
+                >
+                  <p className="font-bold">{u.label}</p>
+                  <p className="text-[10px] opacity-75 mt-0.5">{u.email.split('@')[0]}</p>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

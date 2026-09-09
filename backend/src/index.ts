@@ -9,6 +9,10 @@ import productRoutes from './routes/product.routes';
 import categoryRoutes from './routes/category.routes';
 import requisitionRoutes from './routes/requisition.routes';
 import approvalFlowRoutes from './routes/approvalFlow.routes';
+import vendorRoutes from './routes/vendor.routes';
+import purchaseOrderRoutes from './routes/purchaseOrder.routes';
+import inventoryRoutes from './routes/inventory.routes';
+import maintenanceRoutes from './routes/maintenance.routes';
 import { errorHandler } from './middleware/errorHandler';
 
 dotenv.config();
@@ -18,7 +22,7 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: '*',
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -38,6 +42,10 @@ app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/requisitions', requisitionRoutes);
 app.use('/api/approval-flows', approvalFlowRoutes);
+app.use('/api/vendors', vendorRoutes);
+app.use('/api/purchase-orders', purchaseOrderRoutes);
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/maintenance', maintenanceRoutes);
 
 // Global Error Handler
 app.use(errorHandler);

@@ -1,5 +1,5 @@
 // Prisma Schema - Elkheta ERP System
-// SQLite-compatible for instant zero-config local development and testing
+// Production-Ready: Full support for SQLite (Local) & PostgreSQL (Cloud / Supabase / Neon)
 
 generator client {
   provider = "prisma-client-js"
@@ -11,7 +11,7 @@ datasource db {
 }
 
 // =============================================
-// CORE TABLES
+// CORE TABLES (Branches, Departments, Users)
 // =============================================
 
 model Branch {
@@ -26,9 +26,14 @@ model Branch {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  users        User[]
-  departments  Department[]
-  requisitions Requisition[]
+  users             User[]
+  departments       Department[]
+  requisitions      Requisition[]
+  stocks            Stock[]
+  transfersFrom     StockTransfer[]    @relation("TransferFrom")
+  transfersTo       StockTransfer[]    @relation("TransferTo")
+  purchaseOrders    PurchaseOrder[]
+  maintenanceOrders MaintenanceOrder[]
 
   @@map("branches")
 }
@@ -70,9 +75,12 @@ model User {
   branch     Branch?     @relation(fields: [branchId], references: [id])
   department Department? @relation(fields: [departmentId], references: [id])
 
-  requisitionsCreated     Requisition[]   @relation("RequisitionCreator")
-  approvalLogs            ApprovalLog[]
-  approvalStepsAsApprover ApprovalStep[]  @relation("ApproverUser")
+  requisitionsCreated      Requisition[]      @relation("RequisitionCreator")
+  approvalLogs             ApprovalLog[]
+  approvalStepsAsApprover  ApprovalStep[]     @relation("ApproverUser")
+  purchaseOrdersCreated    PurchaseOrder[]    @relation("POCreator")
+  transfersCreated         StockTransfer[]    @relation("TransferCreator")
+  maintenanceOrdersCreated MaintenanceOrder[] @relation("MaintCreator")
 
   @@map("users")
 }
@@ -110,8 +118,11 @@ model Product {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  category         Category          @relation(fields: [categoryId], references: [id])
+  category         Category            @relation(fields: [categoryId], references: [id])
   requisitionItems RequisitionItem[]
+  stocks           Stock[]
+  poItems          PurchaseOrderItem[]
+  transferItems    StockTransferItem[]
 
   @@map("products")
 }
@@ -180,8 +191,9 @@ model Requisition {
   department   Department?           @relation(fields: [departmentId], references: [id])
   flowTemplate ApprovalFlowTemplate? @relation(fields: [flowTemplateId], references: [id])
 
-  items        RequisitionItem[]
-  approvalLogs ApprovalLog[]
+  items          RequisitionItem[]
+  approvalLogs   ApprovalLog[]
+  purchaseOrders PurchaseOrder[]
 
   @@map("requisitions")
 }
@@ -204,7 +216,7 @@ model RequisitionItem {
 }
 
 // =============================================
-// APPROVAL LOGS
+// APPROVAL LOGS (Audit Trail)
 // =============================================
 
 model ApprovalLog {
@@ -221,4 +233,158 @@ model ApprovalLog {
   approver    User        @relation(fields: [approverId], references: [id])
 
   @@map("approval_logs")
+}
+
+// =============================================
+// VENDORS & PROCUREMENT (الموردين وأوامر الشراء)
+// =============================================
+
+model Vendor {
+  id          String   @id @default(cuid())
+  nameAr      String   // اسم الشركة الموردة بالعربي
+  nameEn      String?  // اسم الشركة بالإنجليزي
+  phone       String?
+  email       String?
+  address     String?
+  taxNumber   String?  // الرقم الضريبي / السجل التجاري
+  category    String   // مجال التوريد (مواد خام، قطع غيار، معدات...)
+  rating      Float    @default(5.0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  purchaseOrders PurchaseOrder[]
+
+  @@map("vendors")
+}
+
+model PurchaseOrder {
+  id            String   @id @default(cuid())
+  poNumber      String   @unique // PO-2026-0001
+  requisitionId String?  // إذا كان منشأ من طلب احتياج
+  vendorId      String
+  branchId      String   // الفرع المستفيد
+  createdById   String
+  status        String   @default("DRAFT") // DRAFT, APPROVED, RECEIVED, CANCELLED
+  totalAmount   Float    @default(0)
+  matchVerified Boolean  @default(false) // 3-Way Matching verified
+  notes         String?
+  deliveryDate  DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  requisition Requisition?        @relation(fields: [requisitionId], references: [id])
+  vendor      Vendor             @relation(fields: [vendorId], references: [id])
+  branch      Branch             @relation(fields: [branchId], references: [id])
+  createdBy   User               @relation("POCreator", fields: [createdById], references: [id])
+  items       PurchaseOrderItem[]
+
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id          String  @id @default(cuid())
+  poId        String
+  productId   String
+  quantity    Float
+  unitPrice   Float
+  totalPrice  Float
+  receivedQty Float   @default(0)
+
+  po      PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  product Product       @relation(fields: [productId], references: [id])
+
+  @@map("purchase_order_items")
+}
+
+// =============================================
+// INVENTORY & TRANSFERS (المخازن والتحويلات)
+// =============================================
+
+model Stock {
+  id        String   @id @default(cuid())
+  branchId  String   // المخزن / الفرع
+  productId String   // الصنف
+  quantity  Float    @default(0) // الرصيد الحالي
+  minStock  Float    @default(0) // حد إعادة الطلب للفرع
+  updatedAt DateTime @updatedAt
+
+  branch  Branch  @relation(fields: [branchId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([branchId, productId])
+  @@map("stocks")
+}
+
+model StockTransfer {
+  id           String   @id @default(cuid())
+  transferNo   String   @unique // TR-2026-0001
+  fromBranchId String   // من مخزن
+  toBranchId   String   // إلى مخزن
+  createdById  String
+  status       String   @default("PENDING") // PENDING, IN_TRANSIT, DELIVERED, CANCELLED
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  fromBranch Branch              @relation("TransferFrom", fields: [fromBranchId], references: [id])
+  toBranch   Branch              @relation("TransferTo", fields: [toBranchId], references: [id])
+  createdBy  User                @relation("TransferCreator", fields: [createdById], references: [id])
+  items      StockTransferItem[]
+
+  @@map("stock_transfers")
+}
+
+model StockTransferItem {
+  id         String @id @default(cuid())
+  transferId String
+  productId  String
+  quantity   Float
+
+  transfer StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  product  Product       @relation(fields: [productId], references: [id])
+
+  @@map("stock_transfer_items")
+}
+
+// =============================================
+// MAINTENANCE (الصيانة والأصول)
+// =============================================
+
+model MaintenanceOrder {
+  id               String   @id @default(cuid())
+  orderNo          String   @unique // WO-2026-0001
+  branchId         String
+  createdById      String
+  assetName        String   // اسم الأصل / المعدة
+  type             String   @default("PREVENTIVE") // PREVENTIVE (وقائية), EMERGENCY (طارئة)
+  priority         String   @default("MEDIUM")     // LOW, MEDIUM, HIGH
+  description      String?  // وصف العطل / الصيانة
+  technician       String?  // الفني / جهة التنفيذ
+  sparePartsNeeded String?  // قطع الغيار المطلوبة
+  cost             Float?   @default(0)
+  status           String   @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, CANCELLED
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  branch    Branch @relation(fields: [branchId], references: [id])
+  createdBy User   @relation("MaintCreator", fields: [createdById], references: [id])
+
+  @@map("maintenance_orders")
+}
+
+model MaintenanceContract {
+  id              String    @id @default(cuid())
+  contractNo      String    @unique // CNT-2026-001
+  title           String    // عنوان العقد (صيانة التكييفات، صيانة أنظمة الحريق...)
+  serviceProvider String    // الشركة مقدمة الخدمة
+  scope           String?   // النطاق والشروط
+  annualCost      Float     @default(0)
+  startDate       DateTime?
+  expiryDate      DateTime  // تاريخ التجديد والانتهاء
+  status          String    @default("ACTIVE") // ACTIVE, EXPIRING_SOON, EXPIRED
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("maintenance_contracts")
 }
